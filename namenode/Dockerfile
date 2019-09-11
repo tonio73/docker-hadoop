@@ -1,6 +1,6 @@
 FROM bde2020/hadoop-base
 
-MAINTAINER Ivan Ermilov <ivan.s.ermilov@gmail.com>
+LABEL maintaine="Ivan Ermilov <ivan.s.ermilov@gmail.com>"
 
 HEALTHCHECK CMD curl -f http://localhost:9870/ || exit 1
 
@@ -13,4 +13,4 @@ RUN chmod a+x /run.sh
 
 EXPOSE 9870
 
-CMD ["/run.sh"]
+ENTRYPOINT ["/run.sh"]
