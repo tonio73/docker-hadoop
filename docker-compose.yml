@@ -6,39 +6,76 @@ services:
     container_name: namenode
     ports:
       - 9870:9870
+    expose:
+      - 9870
     volumes:
       - hadoop_namenode:/hadoop/dfs/name
       - ../hadoop_namenode/home:/home
     environment:
       - CLUSTER_NAME=test
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:9870/ || exit 1"]
     env_file:
       - ./hadoop.env
 
-  datanode:
+  datanode1:
+    build: ./datanode
     image: bde2020/hadoop-datanode:2.0.0-hadoop3.1.1-java8
-    container_name: datanode
+    container_name: datanode1
+    expose:
+      - 9864
     volumes:
-      - hadoop_datanode:/hadoop/dfs/data
-    environment:
-      SERVICE_PRECONDITION: "namenode:9870"
+      - hadoop_datanode1:/hadoop/dfs/data
+    depends_on:
+      - namenode
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:9864/ || exit 1"]
     env_file:
       - ./hadoop.env
-  
+
+  datanode2:
+    build: ./datanode
+    image: bde2020/hadoop-datanode:2.0.0-hadoop3.1.1-java8
+    container_name: datanode2
+    expose:
+      - 9865
+    volumes:
+      - hadoop_datanode2:/hadoop/dfs/data
+    depends_on:
+      - namenode
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:9865/ || exit 1"]
+    env_file:
+      - ./hadoop.env
+
   resourcemanager:
     image: bde2020/hadoop-resourcemanager:2.0.0-hadoop3.1.1-java8
     container_name: resourcemanager
     ports: 
       - 8088:8088
-    environment:
-      SERVICE_PRECONDITION: "namenode:9870 datanode:9864"
+    expose:
+      - 8088
+    depends_on:
+      - namenode
+      - datanode1
+      - datanode2
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8088/ || exit 1"]
     env_file:
       - ./hadoop.env
 
   nodemanager1:
     image: bde2020/hadoop-nodemanager:2.0.0-hadoop3.1.1-java8
     container_name: nodemanager
-    environment:
-      SERVICE_PRECONDITION: "namenode:9870 datanode:9864 resourcemanager:8088"
+    expose:
+      - 8042
+    depends_on:
+      - namenode
+      - datanode1
+      - datanode2
+      - resourcemanager
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8042/ || exit 1"]
     env_file:
       - ./hadoop.env
   
@@ -47,14 +84,22 @@ services:
     container_name: historyserver
     ports: 
       - 8188:8188
-    environment:
-      SERVICE_PRECONDITION: "namenode:9870 datanode:9864 resourcemanager:8088"
+    expose:
+      - 8188
+    depends_on:
+      - namenode
+      - datanode1
+      - datanode2
+      - resourcemanager
     volumes:
       - hadoop_historyserver:/hadoop/yarn/timeline
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8188/ || exit 1"]
     env_file:
       - ./hadoop.env
   
 volumes:
   hadoop_namenode:
-  hadoop_datanode:
+  hadoop_datanode1:
+  hadoop_datanode2:
   hadoop_historyserver:
